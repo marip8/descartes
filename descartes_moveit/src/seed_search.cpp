@@ -29,7 +29,7 @@ bool doFK(moveit::core::RobotState& state, const moveit::core::JointModelGroup* 
     return false;
   }
 
-  result = state.getFrameTransform(tool);
+  result = Eigen::Isometry3d(state.getFrameTransform(tool).matrix());
   return true;
 }
 

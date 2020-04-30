@@ -135,7 +135,7 @@ bool MoveitStateAdapter::initialize(robot_model::RobotModelConstPtr robot_model,
               " transformed to world frame '%s'",
               __FUNCTION__, world_frame_.c_str(), model_frame.c_str(), world_frame_.c_str());
 
-    Eigen::Isometry3d root_to_world = robot_state_->getFrameTransform(world_frame_);
+    Eigen::Isometry3d root_to_world(robot_state_->getFrameTransform(world_frame_).matrix());
     world_to_root_ = descartes_core::Frame(root_to_world.inverse());
   }
 
@@ -271,7 +271,7 @@ bool MoveitStateAdapter::getFK(const std::vector<double>& joint_pose, Eigen::Iso
   {
     if (robot_state_->knowsFrameTransform(tool_frame_))
     {
-      pose = world_to_root_.frame * robot_state_->getFrameTransform(tool_frame_);
+      pose = world_to_root_.frame * Eigen::Isometry3d(robot_state_->getFrameTransform(tool_frame_).matrix());
       rtn = true;
     }
     else

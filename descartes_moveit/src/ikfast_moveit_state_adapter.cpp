@@ -193,10 +193,17 @@ bool descartes_moveit::IkFastMoveitStateAdapter::computeIKFastTransforms()
   }
 
   // calculate frames
-  tool0_to_tip_ = descartes_core::Frame(robot_state_->getFrameTransform(tool_frame_).inverse() *
-                                        robot_state_->getFrameTransform(ikfast_tool_frame));
+  Eigen::Isometry3d ikfast_base_transform(
+    robot_state_->getFrameTransform(ikfast_base_frame).matrix());
+  Eigen::Isometry3d ikfast_tool0_transform(
+    robot_state_->getFrameTransform(tool_frame_).matrix());
+  Eigen::Isometry3d ikfast_tip_transform(
+    robot_state_->getFrameTransform(ikfast_tool_frame).matrix());
 
-  world_to_base_ = descartes_core::Frame(world_to_root_.frame * robot_state_->getFrameTransform(ikfast_base_frame));
+  tool0_to_tip_ = descartes_core::Frame(ikfast_tool0_transform.inverse() *
+                                        ikfast_tip_transform);
+
+  world_to_base_ = descartes_core::Frame(world_to_root_.frame * ikfast_base_transform);
 
   CONSOLE_BRIDGE_logInform("IkFastMoveitStateAdapter: initialized with IKFast tool frame '%s' and base frame '%s'.",
             ikfast_tool_frame.c_str(), ikfast_base_frame.c_str());
