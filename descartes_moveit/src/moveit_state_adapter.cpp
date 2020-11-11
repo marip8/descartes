@@ -23,7 +23,6 @@
 #include "descartes_moveit/seed_search.h"
 
 #include <eigen_conversions/eigen_msg.h>
-#include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit_msgs/GetPlanningScene.h>
 #include <moveit/robot_state/conversions.h>
 #include <moveit/move_group/capability_names.h>
@@ -77,20 +76,18 @@ bool MoveitStateAdapter::initialize(const std::string& robot_description, const 
                                     const std::string& world_frame, const std::string& tcp_frame)
 {
   // Initialize MoveIt state objects
-  robot_model_ptr_ = moveit::planning_interface::getSharedRobotModel(robot_description);
-//  robot_model_loader_.reset(new robot_model_loader::RobotModelLoader(robot_description));
+  robot_model_loader_ = std::make_shared<robot_model_loader::RobotModelLoader>(robot_description);
+  robot_model_ptr_ = robot_model_loader_->getModel();
 
-//  return initialize(robot_model_loader_->getModel(), group_name, world_frame, tcp_frame);
   return initialize(robot_model_ptr_, group_name, world_frame, tcp_frame);
 }
 
-bool MoveitStateAdapter::initialize(robot_model::RobotModelConstPtr robot_model, const std::string &group_name,
+bool MoveitStateAdapter::initialize(robot_model::RobotModelConstPtr, const std::string &group_name,
                                     const std::string &world_frame, const std::string &tcp_frame)
 {
-//  robot_model_ptr_ = robot_model;
-  robot_state_.reset(new moveit::core::RobotState(robot_model_ptr_));
+  robot_state_ = std::make_shared<moveit::core::RobotState>(robot_model_ptr_);
   robot_state_->setToDefaultValues();
-  planning_scene_.reset(new planning_scene::PlanningScene(robot_model));
+  planning_scene_ = std::make_shared<planning_scene::PlanningScene>(robot_model_ptr_);
   joint_group_ = robot_model_ptr_->getJointModelGroup(group_name);
 
   // Assign robot frames
