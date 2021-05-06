@@ -153,7 +153,7 @@ bool MoveitStateAdapter::getIK(const Eigen::Isometry3d& pose, std::vector<double
   bool rtn = false;
 
   // transform to group base
-  Eigen::Isometry3d tool_pose = world_to_root_.frame * pose;
+  Eigen::Isometry3d tool_pose = world_to_root_.frame_inv * pose;
 
   if (robot_state_->setFromIK(joint_group_, tool_pose, tool_frame_))
   {
