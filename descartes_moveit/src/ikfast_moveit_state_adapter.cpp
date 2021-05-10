@@ -178,32 +178,31 @@ bool descartes_moveit::IkFastMoveitStateAdapter::computeIKFastTransforms()
   nh.param<std::string>("ikfast_base_frame", ikfast_base_frame, default_base_frame);
   nh.param<std::string>("ikfast_tool_frame", ikfast_tool_frame, default_tool_frame);
 
-  if (!robot_state_->knowsFrameTransform(ikfast_base_frame))
-  {
-    CONSOLE_BRIDGE_logError("IkFastMoveitStateAdapter: Cannot find transformation to frame '%s' in group '%s'.",
-             ikfast_base_frame.c_str(), group_name_.c_str());
-    return false;
-  }
-
-  if (!robot_state_->knowsFrameTransform(ikfast_tool_frame))
-  {
-    CONSOLE_BRIDGE_logError("IkFastMoveitStateAdapter: Cannot find transformation to frame '%s' in group '%s'.",
-             ikfast_tool_frame.c_str(), group_name_.c_str());
-    return false;
-  }
+  auto get_transform = [this](const std::string& frame) -> Eigen::Matrix4d {
+    if (robot_state_->knowsFrameTransform(frame))
+    {
+      auto transform = robot_state_->getFrameTransform(frame);
+      return transform.matrix();
+    }
+    else
+      throw std::runtime_error("Failed to get transform to frame '" + frame + "'");
+  };
 
   // calculate frames
-  Eigen::Isometry3d ikfast_base_transform(
-    robot_state_->getFrameTransform(ikfast_base_frame).matrix());
-  Eigen::Isometry3d ikfast_tool0_transform(
-    robot_state_->getFrameTransform(tool_frame_).matrix());
-  Eigen::Isometry3d ikfast_tip_transform(
-    robot_state_->getFrameTransform(ikfast_tool_frame).matrix());
+  try
+  {
+    Eigen::Isometry3d ikfast_base_transform(get_transform(ikfast_base_frame));
+    Eigen::Isometry3d ikfast_tool0_transform(get_transform(tool_frame_));
+    Eigen::Isometry3d ikfast_tip_transform(get_transform(ikfast_tool_frame));
 
-  tool0_to_tip_ = descartes_core::Frame(ikfast_tool0_transform.inverse() *
-                                        ikfast_tip_transform);
-
-  world_to_base_ = descartes_core::Frame(world_to_root_.frame * ikfast_base_transform);
+    tool0_to_tip_ = descartes_core::Frame(ikfast_tool0_transform.inverse() * ikfast_tip_transform);
+    world_to_base_ = descartes_core::Frame(world_to_root_.frame * ikfast_base_transform);
+  }
+  catch (const std::exception &ex)
+  {
+    ROS_ERROR_STREAM(ex.what());
+    return false;
+  }
 
   CONSOLE_BRIDGE_logInform("IkFastMoveitStateAdapter: initialized with IKFast tool frame '%s' and base frame '%s'.",
             ikfast_tool_frame.c_str(), ikfast_base_frame.c_str());
